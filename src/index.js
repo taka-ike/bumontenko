@@ -60,10 +60,10 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'サーバー内部エラーが発生しました。' });
 });
 
-app.listen(config.port, '0.0.0.0', () => {
+app.listen(config.port, config.host, () => {
   console.log(`====================================================`);
   console.log(` 文化祭 部門点呼システム サーバー起動完了`);
-  console.log(` ポート: ${config.port}`);
+  console.log(` バインド: ${config.host}:${config.port}`);
   console.log(` 動作モード: ${config.nodeEnv}`);
   console.log(` IP制限: ${config.ipFilterEnabled ? '有効 (学内限定)' : '無効 (全アクセス許可)'}`);
   if (config.ipFilterEnabled) {

@@ -87,6 +87,7 @@ function ipFilterMiddleware(req, res, next) {
   const pathname = req.path;
   if (
     pathname.startsWith('/tadmin') ||
+    pathname === '/healthz' ||
     pathname === '/error-denied.html' ||
     pathname.startsWith('/css/') ||
     pathname.startsWith('/js/') ||

@@ -16,6 +16,7 @@ const barcodeTenkoLocationId = parseInt(process.env.BARCODE_TENKO_LOCATION_ID, 1
 
 module.exports = {
   port: parseInt(process.env.PORT, 10) || 8080,
+  host: process.env.HOST || '127.0.0.1',
   nodeEnv: process.env.NODE_ENV || 'development',
   isDev: (process.env.NODE_ENV || 'development') === 'development',
   dbPath: path.resolve(__dirname, '..', process.env.DB_PATH || 'data/tenko.sqlite'),

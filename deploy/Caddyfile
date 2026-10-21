@@ -1,0 +1,67 @@
+# /etc/caddy/Caddyfile
+# 東京高専 文化祭 点呼システム Caddy 設定（本番決定版）
+
+# ご自身のドメイン（例: tenko.your-domain.jp や kunugidatenko.f5.si）
+tenko.your-domain.jp {
+    # ログ出力（JSON形式・自動ローテーション）
+    log {
+        output file /var/log/caddy/bumon_tenko_access.log {
+            roll_size 10mb
+            roll_keep 10
+            roll_keep_for 720h
+        }
+        format json
+    }
+
+    # Gzip / Zstandard 圧縮
+    encode gzip zstd
+
+    # 東京高専 学内グローバルIPレンジ定義
+    # ※ 事前にキャンパス内Wi-Fiで確認した出口IP帯をカンマ区切りまたはスペース区切りで指定
+    @kosen_campus {
+        remote_ip 133.0.0.0/8 127.0.0.1 ::1
+    }
+
+    # 管理画面・静的アセット・ヘルスチェックは学外からも許可（管理者の確認用）
+    @public_paths {
+        path /tadmin* /favicon.ico /error-denied.html /healthz
+    }
+
+    # 【学外アクセス制限】学外からの点呼フォームアクセスは案内ページを返却
+    handle not @kosen_campus {
+        # 管理画面や静的アセットはそのままプロキシ
+        handle @public_paths {
+            reverse_proxy 127.0.0.1:8080 {
+                header_up X-Forwarded-For {remote_host}
+                header_up X-Forwarded-Proto {scheme}
+            }
+        }
+        # それ以外の学外アクセスは「学内Wi-Fi接続案内画面」を表示
+        handle {
+            rewrite * /error-denied.html
+            reverse_proxy 127.0.0.1:8080 {
+                header_up X-Forwarded-For {remote_host}
+                header_up X-Forwarded-Proto {scheme}
+            }
+        }
+    }
+
+    # 【学内アクセス】通常通りリバースプロキシ
+    handle {
+        reverse_proxy 127.0.0.1:8080 {
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+            header_up Host {host}
+        }
+    }
+
+    # セキュリティヘッダー（HSTS, nosniff, クリックジャッキング対策）
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+        -X-Powered-By
+    }
+}

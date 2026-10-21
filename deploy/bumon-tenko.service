@@ -1,0 +1,22 @@
+[Unit]
+Description=Tokyo Kosen Cultural Festival Roll-Call Server (BumonTenko)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=tenko
+Group=tenko
+WorkingDirectory=/opt/bumontenko/server
+ExecStart=/usr/bin/node src/index.js
+Restart=always
+RestartSec=5
+EnvironmentFile=/opt/bumontenko/server/.env
+
+# セキュリティサンドボックス設定
+ProtectSystem=full
+ProtectHome=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
