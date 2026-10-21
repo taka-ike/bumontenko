@@ -4,6 +4,7 @@ const path = require('path');
 const config = require('./config');
 const { ipFilterMiddleware } = require('./ipFilter');
 const barcodeTenko = require('./barcodeTenko');
+const roster = require('./roster');
 
 const formRouter = require('./routes/form');
 const dashboardRouter = require('./routes/dashboard');
@@ -67,6 +68,12 @@ app.listen(config.port, '0.0.0.0', () => {
   console.log(` IP制限: ${config.ipFilterEnabled ? '有効 (学内限定)' : '無効 (全アクセス許可)'}`);
   if (config.ipFilterEnabled) {
     console.log(` 許可IP: ${config.allowedIps.join(', ')}`);
+  }
+  const rosterStatus = roster.getStatus();
+  if (rosterStatus.loaded) {
+    console.log(` 名簿: ${rosterStatus.count}件 (${rosterStatus.path})`);
+  } else {
+    console.log(` ⚠ 名簿: 未設定 (${rosterStatus.path}) — 学籍番号の受け付けは全て拒否されます`);
   }
   console.log(` 点呼フォーム: http://localhost:${config.port}/`);
   console.log(` 本部ダッシュボード: http://localhost:${config.port}/dashboard`);

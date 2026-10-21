@@ -51,7 +51,7 @@ function verifyOtp(studentId, inputCode) {
 
   // 試行回数超過チェック
   if (record.attempts >= config.otpMaxAttempts) {
-    db.prepare('DELETE FROM otp_codes WHERE student_id = ?').run(cleanId);
+    // 行は削除しない。削除すると即座に再発行でき、再送制限の抜け穴になる
     return { valid: false, error: '認証コードの入力試行回数が上限を超えました。再度コードを発行してください。' };
   }
 
@@ -70,7 +70,16 @@ function verifyOtp(studentId, inputCode) {
   return { valid: true };
 }
 
+/**
+ * 指定したコードが一致する場合のみ破棄する（Webhook送信失敗時のクールダウン解除用）
+ */
+function discardOtp(studentId, code) {
+  const cleanId = String(studentId).trim().toUpperCase();
+  db.prepare('DELETE FROM otp_codes WHERE student_id = ? AND code = ?').run(cleanId, String(code).trim());
+}
+
 module.exports = {
   createOtp,
-  verifyOtp
+  verifyOtp,
+  discardOtp
 };

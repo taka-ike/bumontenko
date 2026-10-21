@@ -8,9 +8,11 @@ const testDbPath = path.resolve(__dirname, 'test_tenko.sqlite');
 process.env.DB_PATH = 'test/test_tenko.sqlite';
 process.env.IP_FILTER_ENABLED = 'true';
 process.env.ALLOWED_IPS = '133.0.0.0/8,127.0.0.1,::1,192.168.1.0/24';
+process.env.STUDENT_ROSTER_PATH = 'test/roster.fixture.json';
 
 const db = require('../src/db');
 const otp = require('../src/otp');
+const roster = require('../src/roster');
 const { isIpAllowed } = require('../src/ipFilter');
 const config = require('../src/config');
 
@@ -53,6 +55,28 @@ describe('文化祭点呼システム ユニット・結合テスト', () => {
       // 再度同じコードで検証すると破棄されているため失敗する
       const reVerify = otp.verifyOtp('TEST02', generated.code);
       assert.strictEqual(reVerify.valid, false);
+    });
+
+    test('送信失敗時は一致するコードのみ破棄されること', () => {
+      const generated = otp.createOtp('TEST01');
+
+      otp.discardOtp('TEST01', '000000');
+      assert.ok(db.prepare('SELECT 1 FROM otp_codes WHERE student_id = ?').get('TEST01'));
+
+      otp.discardOtp('TEST01', generated.code);
+      assert.strictEqual(db.prepare('SELECT 1 FROM otp_codes WHERE student_id = ?').get('TEST01'), undefined);
+    });
+
+    test('試行回数超過後もコード行が残り、再送制限が維持されること', () => {
+      const generated = otp.createOtp('TEST02');
+      for (let i = 0; i < 5; i++) {
+        otp.verifyOtp('TEST02', '000000');
+      }
+
+      const blocked = otp.verifyOtp('TEST02', generated.code);
+      assert.strictEqual(blocked.valid, false);
+      assert.match(blocked.error, /試行回数/);
+      assert.ok(db.prepare('SELECT 1 FROM otp_codes WHERE student_id = ?').get('TEST02'));
     });
   });
 
@@ -117,6 +141,40 @@ describe('文化祭点呼システム ユニット・結合テスト', () => {
       // レコード総数は重複せず1件のままであること
       const count = db.prepare('SELECT COUNT(*) as c FROM attendance_records WHERE session_id = ? AND student_id = ?').get(session.id, '21420').c;
       assert.strictEqual(count, 1);
+    });
+  });
+
+  describe('4. 学籍番号名簿チェック', () => {
+    test('起動時に名簿が読み込まれ、表記ゆれを吸収して照合されること', () => {
+      const status = roster.getStatus();
+      assert.strictEqual(status.loaded, true);
+      assert.strictEqual(status.count, 4);
+      assert.strictEqual(roster.isRegistered('21420'), true);
+      assert.strictEqual(roster.isRegistered(' 21420 '), true);
+      assert.strictEqual(roster.isRegistered('test01'), true);
+      assert.strictEqual(roster.isRegistered('99999'), false);
+    });
+
+    test('名簿が読み込めない場合は全件拒否（fail-closed）になること', () => {
+      roster.load(path.resolve(__dirname, 'missing_roster.json'));
+      assert.strictEqual(roster.getStatus().loaded, false);
+      assert.strictEqual(roster.isRegistered('21420'), false);
+
+      roster.load();
+      assert.strictEqual(roster.getStatus().loaded, true);
+    });
+
+    test('空の名簿は未設定として扱われること', () => {
+      const emptyPath = path.resolve(__dirname, 'empty_roster.fixture.json');
+      fs.writeFileSync(emptyPath, '[]');
+
+      try {
+        roster.load(emptyPath);
+        assert.strictEqual(roster.getStatus().loaded, false);
+      } finally {
+        fs.unlinkSync(emptyPath);
+        roster.load();
+      }
     });
   });
 

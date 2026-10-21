@@ -31,6 +31,9 @@ module.exports = {
   otpExpiresMinutes: parseInt(process.env.OTP_EXPIRES_MINUTES, 10) || 5,
   otpMaxAttempts: parseInt(process.env.OTP_MAX_ATTEMPTS, 10) || 5,
 
+  // 学籍番号名簿（JSON配列）
+  rosterPath: path.resolve(__dirname, '..', process.env.STUDENT_ROSTER_PATH || 'data/roster.json'),
+
   // Power Automate Webhook (OTP送信用)
   teamsWebhookUrl: process.env.TEAMS_WEBHOOK_URL || '',
   webhookSecret: process.env.WEBHOOK_SECRET || '',

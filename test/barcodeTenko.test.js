@@ -13,6 +13,7 @@ process.env.BARCODE_TENKO_BASE_URL = 'http://127.0.0.1:8097';
 process.env.BARCODE_TENKO_CLIENT_TOKEN = 'test-token';
 process.env.BARCODE_TENKO_CLIENT_ID = 'bumon-tenko3';
 process.env.BARCODE_TENKO_LOCATION_ID = '3';
+process.env.STUDENT_ROSTER_PATH = 'test/roster.fixture.json';
 
 const config = require('../src/config');
 const db = require('../src/db');

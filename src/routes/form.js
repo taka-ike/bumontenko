@@ -3,6 +3,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const db = require('../db');
 const otp = require('../otp');
+const roster = require('../roster');
 const webhook = require('../webhook');
 const barcodeTenko = require('../barcodeTenko');
 const events = require('../events');
@@ -37,7 +38,7 @@ router.post('/send-code', (req, res) => {
     return res.status(400).json({ error: '学籍番号を入力してください。' });
   }
 
-  const cleanId = studentId.trim();
+  const cleanId = studentId.trim().toUpperCase();
 
   // 現在セッションが開いているか確認
   const currentSession = db.prepare(`
@@ -45,6 +46,31 @@ router.post('/send-code', (req, res) => {
   `).get();
   if (!currentSession) {
     return res.status(400).json({ error: '現在受付中の点呼セッションはありません。' });
+  }
+
+  // 名簿チェック
+  if (!roster.getStatus().loaded) {
+    console.error('[Form] 名簿が未設定のため、認証コードの送信を拒否しました。');
+    return res.status(503).json({ error: '名簿が設定されていません。管理者に連絡してください。' });
+  }
+  if (!roster.isRegistered(cleanId)) {
+    return res.status(403).json({ error: '学籍番号を確認してください' });
+  }
+
+  // 再送制限: 前回のコードが有効な間は再送できない
+  const existingOtp = db.prepare('SELECT expires_at FROM otp_codes WHERE student_id = ?').get(cleanId);
+  if (existingOtp) {
+    const retryAfterSeconds = Math.ceil((existingOtp.expires_at - Date.now()) / 1000);
+    if (retryAfterSeconds > 0) {
+      const waitText = retryAfterSeconds >= 60
+        ? `${Math.floor(retryAfterSeconds / 60)}分${retryAfterSeconds % 60}秒`
+        : `${retryAfterSeconds}秒`;
+      res.set('Retry-After', String(retryAfterSeconds));
+      return res.status(429).json({
+        error: `認証コードは既に送信済みです。あと${waitText}後に再送できます。`,
+        retryAfterSeconds
+      });
+    }
   }
 
   // OTPコードの生成
@@ -71,6 +97,15 @@ router.post('/submit', (req, res) => {
   }
 
   const cleanId = String(studentId).trim().toUpperCase();
+
+  // 名簿チェック
+  if (!roster.getStatus().loaded) {
+    console.error('[Form] 名簿が未設定のため、点呼の受け付けを拒否しました。');
+    return res.status(503).json({ error: '名簿が設定されていません。管理者に連絡してください。' });
+  }
+  if (!roster.isRegistered(cleanId)) {
+    return res.status(403).json({ error: '学籍番号を確認してください' });
+  }
 
   // 1. セッションの確認
   const currentSession = db.prepare(`

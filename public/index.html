@@ -189,6 +189,36 @@
     }
 
     // OTP送信リクエスト
+    const SEND_OTP_LABEL = '<i class="fa-solid fa-paper-plane"></i><span>Teamsに認証コードを送信</span>';
+    let cooldownTimer = null;
+
+    // 再送までのカウントダウン
+    function startCooldown(seconds) {
+      const btn = document.getElementById('sendOtpBtn');
+      if (!Number.isFinite(seconds) || seconds <= 0) return;
+
+      const deadline = Date.now() + seconds * 1000;
+      clearInterval(cooldownTimer);
+
+      const tick = () => {
+        const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+        if (remaining === 0) {
+          clearInterval(cooldownTimer);
+          cooldownTimer = null;
+          btn.disabled = false;
+          btn.innerHTML = SEND_OTP_LABEL;
+          return;
+        }
+        const minutes = Math.floor(remaining / 60);
+        const secs = String(remaining % 60).padStart(2, '0');
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-clock"></i><span>再送まで ${minutes}:${secs}</span>`;
+      };
+
+      tick();
+      cooldownTimer = setInterval(tick, 1000);
+    }
+
     async function handleSendOtp() {
       const studentIdInput = document.getElementById('studentIdInput');
       const studentId = studentIdInput.value.trim();
@@ -212,9 +242,13 @@
         const result = await res.json();
 
         if (!res.ok) {
+          if (res.status === 429 && result.retryAfterSeconds) {
+            startCooldown(result.retryAfterSeconds);
+          } else {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+          }
           alert(result.error || 'コード送信に失敗しました');
-          btn.disabled = false;
-          btn.innerHTML = originalText;
           return;
         }
 
@@ -223,10 +257,7 @@
           `Teamsチャットで6桁のコードを送信しました。`;
         document.getElementById('step2Area').classList.remove('hidden');
 
-        btn.innerHTML = '<i class="fa-solid fa-check"></i> 送信完了（再送する）';
-        btn.disabled = false;
-        btn.classList.remove('bg-blue-700', 'hover:bg-blue-800');
-        btn.classList.add('bg-slate-600', 'hover:bg-slate-700');
+        startCooldown(result.expiresMinutes * 60);
 
         document.getElementById('otpCodeInput').focus();
       } catch (e) {

@@ -1,5 +1,6 @@
 const db = require('./db');
 const config = require('./config');
+const otp = require('./otp');
 
 /**
  * Power Automate の Webhook URL に JSON を POST する
@@ -28,8 +29,11 @@ async function postToWebhook(url, payload) {
 
 /**
  * イベントをキューイングして非同期送信
+ * @param {string} eventType
+ * @param {object} payload
+ * @param {Function} [onFailure] 送信失敗時に呼ばれるコールバック
  */
-function dispatchEvent(eventType, payload) {
+function dispatchEvent(eventType, payload, onFailure) {
   // TEAMS_WEBHOOK_URL が設定されていない場合はコンソールに表示して終了
   if (!config.teamsWebhookUrl) {
     console.log(`\n================== [TEST MODE: Webhook Event] ==================`);
@@ -65,6 +69,14 @@ function dispatchEvent(eventType, payload) {
         SET status = 'failed', attempts = attempts + 1, last_error = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `).run(err.message, queueId);
+
+      if (onFailure) {
+        try {
+          onFailure(err);
+        } catch (hookErr) {
+          console.error(`[Webhook] 失敗時処理でエラー (queueId=${queueId}):`, hookErr.message);
+        }
+      }
     }
   });
 }
@@ -78,6 +90,10 @@ function sendOtpEvent({ studentId, code, expiresMinutes }) {
     code,
     expiresMinutes,
     requestedAt: new Date().toISOString()
+  }, () => {
+    // コードが届かなかった場合は破棄して、即時の再送を許可する
+    otp.discardOtp(studentId, code);
+    console.warn(`[Webhook] 未達の認証コードを破棄しました (studentId=${studentId})`);
   });
 }
 

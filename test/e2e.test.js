@@ -9,6 +9,7 @@ process.env.IP_FILTER_ENABLED = 'false'; // E2Eテスト中は全IP許可
 process.env.ADMIN_PASSWORD = 'test_password_123';
 process.env.PORT = '8099';
 process.env.BARCODE_TENKO_CLIENT_TOKEN = ''; // テスト中は外部送信しない
+process.env.STUDENT_ROSTER_PATH = 'test/roster.fixture.json';
 
 const config = require('../src/config');
 const db = require('../src/db');
@@ -65,6 +66,51 @@ describe('E2E HTTP API 総合テスト', () => {
     assert.strictEqual(res.status, 200);
     const data = await res.json();
     assert.strictEqual(data.success, true);
+  });
+
+  test('名簿に無い学籍番号では /send-code が拒否されること', async () => {
+    const res = await fetch(`${baseUrl}/api/form/send-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId: '99999' })
+    });
+    assert.strictEqual(res.status, 403);
+    const data = await res.json();
+    assert.strictEqual(data.error, '学籍番号を確認してください');
+  });
+
+  test('有効なコードがある間は再送が429で制限されること', async () => {
+    const res = await fetch(`${baseUrl}/api/form/send-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId: '21420' })
+    });
+    assert.strictEqual(res.status, 429);
+    const data = await res.json();
+    assert.ok(data.retryAfterSeconds > 0);
+    assert.ok(Number(res.headers.get('retry-after')) > 0);
+  });
+
+  test('コードの有効期限が切れると再送できること', async () => {
+    db.prepare('UPDATE otp_codes SET expires_at = 1 WHERE student_id = ?').run('21420');
+
+    const res = await fetch(`${baseUrl}/api/form/send-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId: '21420' })
+    });
+    assert.strictEqual(res.status, 200);
+  });
+
+  test('名簿に無い学籍番号では /submit が拒否されること', async () => {
+    const res = await fetch(`${baseUrl}/api/form/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId: '99999', code: '000000', departmentId: 'honbu' })
+    });
+    assert.strictEqual(res.status, 403);
+    const data = await res.json();
+    assert.strictEqual(data.error, '学籍番号を確認してください');
   });
 
   test('POST /api/form/submit で正しいコードを入力して点呼が完了すること', async () => {
