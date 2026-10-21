@@ -3,180 +3,61 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>学内ネットワーク限定 - 文化祭点呼</title>
+  <title>学内ネットワークからアクセスしてください</title>
   <style>
-    /* 外部依存ゼロ（HTML/CSS Only、外部CDN・JSなし） */
-    :root {
-      color-scheme: light;
-    }
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    html {
-      -webkit-text-size-adjust: 100%;
-    }
+    /* 外部依存ゼロ（外部CDNなし） */
+    * { box-sizing: border-box; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background-color: #f8fafc;
-      color: #1e293b;
-      min-height: 100vh;
+      margin: 0;
       min-height: 100dvh;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
+      gap: 16px;
       padding: 16px;
+      background: #f1f5f9;
+      color: #1e293b;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       line-height: 1.6;
     }
-    .card {
-      background-color: #ffffff;
+    main {
+      width: 100%;
+      max-width: 420px;
+      padding: 24px;
+      background: #fff;
       border: 1px solid #e2e8f0;
       border-top: 4px solid #b45309;
       border-radius: 8px;
-      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-      max-width: 440px;
-      width: 100%;
-      overflow: hidden;
     }
-    .header {
-      padding: 24px;
-      border-bottom: 1px solid #e2e8f0;
-    }
-    .badge {
-      display: inline-block;
-      background-color: #fffbeb;
-      color: #92400e;
-      border: 1px solid #fde68a;
-      border-radius: 4px;
-      padding: 2px 8px;
-      font-size: 11px;
-      font-weight: 700;
-    }
-    .title {
+    h1 {
+      margin: 0 0 20px;
       font-size: 20px;
-      font-weight: 700;
-      color: #0f172a;
-      letter-spacing: -0.02em;
-      margin-top: 10px;
+      text-align: center;
     }
-    .subtitle {
-      font-size: 13px;
-      color: #475569;
-      margin-top: 4px;
-    }
-    .content {
-      padding: 24px;
-    }
-    .alert-box {
-      background-color: #fffbeb;
-      border: 1px solid #fde68a;
-      border-left: 4px solid #b45309;
-      border-radius: 6px;
-      padding: 14px;
-      font-size: 13px;
-      color: #78350f;
-      margin-bottom: 20px;
-    }
-    .alert-title {
-      font-weight: 700;
-      color: #92400e;
-      margin-bottom: 4px;
-    }
-    .section-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: #334155;
-      margin-bottom: 8px;
-    }
-    .steps {
-      background-color: #f1f5f9;
-      border: 1px solid #e2e8f0;
-      border-radius: 6px;
-      padding: 14px 16px 14px 32px;
-      font-size: 13px;
-      color: #475569;
-      margin-bottom: 20px;
-    }
-    .steps li {
-      margin-bottom: 6px;
-    }
-    .steps li:last-child {
-      margin-bottom: 0;
-    }
-    .steps strong {
-      color: #0f172a;
-    }
-    .btn-reload {
-      display: block;
+    button {
       width: 100%;
-      background-color: #1e293b;
-      color: #ffffff;
-      text-align: center;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 15px;
-      padding: 12px 16px;
+      padding: 12px;
+      border: 0;
       border-radius: 6px;
-      border: none;
+      background: #1e293b;
+      color: #fff;
+      font: inherit;
+      font-weight: 600;
       cursor: pointer;
-      font-family: inherit;
-      transition: background-color 0.2s;
     }
-    .btn-reload:hover {
-      background-color: #0f172a;
-    }
-    .btn-reload:active {
-      transform: translateY(1px);
-    }
-    .btn-reload:focus-visible {
-      outline: 2px solid #0f172a;
-      outline-offset: 2px;
-    }
-    .footer-note {
-      text-align: center;
+    footer {
       font-size: 12px;
       color: #475569;
-      margin-top: 16px;
-    }
-    @media (max-width: 360px) {
-      .header,
-      .content {
-        padding: 18px;
-      }
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="header">
-      <span class="badge">アクセス制限</span>
-      <h1 class="title">学内Wi-Fiに接続してください</h1>
-      <p class="subtitle">学内ネットワーク限定アクセス</p>
-    </div>
-
-    <div class="content">
-      <div class="alert-box">
-        <p class="alert-title">アクセスが制限されています</p>
-        <p>
-          本点呼フォームは、適正な点呼実施および不正防止のため、<strong>学内ネットワーク（校内Wi-Fi）に接続された端末のみ</strong>からアクセスできるよう設定されています。
-        </p>
-      </div>
-
-      <div class="section-title">接続・再試行手順</div>
-      <ol class="steps">
-        <li>スマートフォンの <strong>Wi-Fi を ON</strong> にしてください。</li>
-        <li>学内無線LAN（<strong>学生用Wi-Fi</strong> または <strong>eduroam</strong>）に接続してください。</li>
-        <li>接続完了後、下のボタンを押してください。</li>
-      </ol>
-
-      <!-- 確実にネットワークへ再問い合わせを行うため JavaScript によるリロードを使用 -->
-      <button onclick="location.reload()" class="btn-reload">再読み込みする</button>
-
-      <p class="footer-note">
-        学内Wi-Fiに接続してもこの画面が出る場合は、くぬぎだ祭実行局 編集部門3J04にお問い合わせください。
-      </p>
-    </div>
-  </div>
+  <main>
+    <h1>学内Wi-Fiに接続してください</h1>
+    <button onclick="location.reload()">再読み込みする</button>
+  </main>
+  <footer>学内Wi-Fiに接続してもこの画面が出る場合は、<br>実行局 編集部門3J04にお問い合わせください。</footer>
 </body>
 </html>
