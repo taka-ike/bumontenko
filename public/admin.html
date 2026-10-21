@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理画面 - 文化祭部門点呼</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    button, input, select, textarea { border-radius: 0; }
+  </style>
+</head>
+<body class="bg-neutral-100 text-neutral-900 min-h-screen">
+  <!-- ログインモーダル -->
+  <div id="loginModal" class="fixed inset-0 bg-neutral-900/40 flex items-center justify-center p-4 z-50">
+    <div class="bg-white border border-neutral-900 max-w-sm w-full p-6" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+      <h2 id="loginTitle" class="text-base font-bold">管理者ログイン</h2>
+      <p class="text-xs text-neutral-600 mt-1 leading-relaxed">点呼システムの管理用パスワードを入力してください</p>
+      <form onsubmit="handleLogin(event)" class="mt-5 space-y-4">
+        <div>
+          <label for="adminPasswordInput" class="block text-xs font-medium text-neutral-700 mb-1.5">パスワード</label>
+          <input
+            type="password"
+            id="adminPasswordInput"
+            autocomplete="current-password"
+            autofocus
+            required
+            class="w-full px-3 py-2.5 bg-white border border-neutral-400 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-neutral-900"
+          >
+        </div>
+        <button
+          type="submit"
+          class="w-full bg-neutral-900 hover:bg-neutral-700 text-white font-semibold py-2.5 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
+        >
+          ログイン
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- メインダッシュボードコンテナ -->
+  <div id="adminApp" class="hidden min-h-screen flex flex-col">
+    <!-- ナビゲーションバー -->
+    <nav class="bg-neutral-900 text-white px-4 md:px-6 py-3 flex justify-between items-center gap-4">
+      <span class="font-bold tracking-tight text-base truncate">文化祭 点呼管理システム</span>
+      <div class="flex items-center gap-2 shrink-0">
+        <a href="/dashboard" target="_blank" rel="noopener" class="text-xs bg-white text-neutral-900 hover:bg-neutral-200 px-3 py-2 transition">
+          ダッシュボード
+        </a>
+        <button onclick="handleLogout()" class="text-xs text-neutral-300 hover:text-white px-2 py-2 transition">
+          ログアウト
+        </button>
+      </div>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 space-y-6">
+      <!-- 上段: セッション管理 & CSVエクスポート -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- セッション管理 (2カラム) -->
+        <div class="lg:col-span-2 bg-white border border-neutral-300 p-5 space-y-4">
+          <div class="flex flex-wrap justify-between items-center gap-3 pb-3 border-b border-neutral-200">
+            <div>
+              <h2 class="font-bold text-base">点呼セッション管理</h2>
+              <p class="text-xs text-neutral-600 mt-0.5">「受付中」のセッションが1つのみフォームで受付可能になります</p>
+            </div>
+            <button onclick="showNewSessionPrompt()" class="bg-neutral-900 hover:bg-neutral-700 text-white text-xs font-semibold px-3 py-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2">
+              新規セッション
+            </button>
+          </div>
+
+          <div id="sessionsList" class="space-y-2.5">
+            <p class="py-6 text-center text-xs text-neutral-600">読み込み中...</p>
+          </div>
+        </div>
+
+        <!-- データエクスポート (1カラム) -->
+        <div class="bg-white border border-neutral-300 p-5 flex flex-col justify-between gap-5">
+          <div class="space-y-4">
+            <h2 class="font-bold text-base pb-3 border-b border-neutral-200">CSVエクスポート</h2>
+            <p class="text-xs text-neutral-600 leading-relaxed">
+              記録された回答データをExcel対応のCSV（BOM付きUTF-8）形式でダウンロードします。
+            </p>
+            <div>
+              <label for="csvSessionSelect" class="block text-xs font-medium text-neutral-700 mb-1.5">対象セッション</label>
+              <select id="csvSessionSelect" class="w-full text-xs p-2.5 bg-white border border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-neutral-900">
+                <option value="">全セッション一括</option>
+              </select>
+            </div>
+          </div>
+
+          <button onclick="downloadCsv()" class="w-full bg-neutral-900 hover:bg-neutral-700 text-white font-semibold py-3 px-4 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2">
+            CSVをダウンロード
+          </button>
+        </div>
+      </div>
+
+      <!-- 中段: 部門マスタ管理 -->
+      <div class="bg-white border border-neutral-300 p-5 space-y-4">
+        <div class="flex flex-wrap justify-between items-center gap-3 pb-3 border-b border-neutral-200">
+          <div>
+            <h2 class="font-bold text-base">部門設定</h2>
+            <p class="text-xs text-neutral-600 mt-0.5">フォームのプルダウンに表示される部門の一覧です</p>
+          </div>
+          <button onclick="showNewDeptPrompt()" class="bg-white border border-neutral-400 hover:bg-neutral-100 text-neutral-900 text-xs font-semibold px-3 py-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2">
+            部門追加
+          </button>
+        </div>
+
+        <div id="deptListTable" class="overflow-x-auto">
+          <p class="py-6 text-center text-xs text-neutral-600">読み込み中...</p>
+        </div>
+      </div>
+
+      <!-- 下段: 最新回答レコード一覧 -->
+      <div class="bg-white border border-neutral-300 p-5 space-y-4">
+        <div class="flex justify-between items-center gap-3 pb-3 border-b border-neutral-200">
+          <h2 class="font-bold text-base">点呼回答ログ</h2>
+          <button onclick="loadRecords()" class="text-xs text-neutral-700 hover:text-neutral-900 hover:underline">
+            再読込
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-neutral-700">
+            <thead class="bg-neutral-100 text-neutral-700 font-semibold text-[11px] border-b border-neutral-300">
+              <tr>
+                <th scope="col" class="py-2.5 px-3">セッション</th>
+                <th scope="col" class="py-2.5 px-3">部門</th>
+                <th scope="col" class="py-2.5 px-3">学籍番号</th>
+                <th scope="col" class="py-2.5 px-3">送信元IP</th>
+                <th scope="col" class="py-2.5 px-3">送信日時</th>
+              </tr>
+            </thead>
+            <tbody id="recordsTableBody" class="divide-y divide-neutral-200">
+              <tr>
+                <td colspan="5" class="py-8 text-center text-xs text-neutral-600">読み込み中...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[ch]);
+    }
+
+    // 認証確認
+    async function checkAuth() {
+      try {
+        const res = await fetch('/admin/api/me');
+        const data = await res.json();
+        if (data.authenticated) {
+          showAdminView();
+        } else {
+          showLoginModal();
+        }
+      } catch (e) {
+        showLoginModal();
+      }
+    }
+
+    function showLoginModal() {
+      document.getElementById('loginModal').classList.remove('hidden');
+      document.getElementById('adminApp').classList.add('hidden');
+    }
+
+    function showAdminView() {
+      document.getElementById('loginModal').classList.add('hidden');
+      document.getElementById('adminApp').classList.remove('hidden');
+      loadAllData();
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const password = document.getElementById('adminPasswordInput').value;
+      try {
+        const res = await fetch('/admin/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        if (res.ok) {
+          showAdminView();
+        } else {
+          alert('パスワードが正しくありません');
+        }
+      } catch (err) {
+        alert('ログインエラー: ' + err.message);
+      }
+    }
+
+    async function handleLogout() {
+      await fetch('/admin/api/logout', { method: 'POST' });
+      showLoginModal();
+    }
+
+    async function loadAllData() {
+      await Promise.all([loadSessions(), loadDepartments(), loadRecords()]);
+    }
+
+    // セッション読み込み
+    async function loadSessions() {
+      const res = await fetch('/admin/api/sessions');
+      const sessions = await res.json();
+
+      const container = document.getElementById('sessionsList');
+      const select = document.getElementById('csvSessionSelect');
+      container.innerHTML = '';
+      select.innerHTML = '<option value="">全セッション一括</option>';
+
+      if (sessions.length === 0) {
+        container.innerHTML = '<p class="py-6 text-center text-xs text-neutral-600">セッションがまだありません。「新規セッション」から作成してください。</p>';
+        return;
+      }
+
+      for (const s of sessions) {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = `${s.name} (${s.record_count}件)`;
+        select.appendChild(opt);
+
+        const isOpen = s.status === 'open';
+        const card = document.createElement('div');
+        card.className = `p-3.5 border flex flex-wrap items-center justify-between gap-3 ${
+          isOpen ? 'bg-white border-neutral-900' : 'bg-neutral-50 border-neutral-300'
+        }`;
+
+        card.innerHTML = `
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="px-2 py-0.5 border text-xs font-semibold ${
+              isOpen ? 'bg-neutral-900 text-white border-neutral-900' : 'bg-white text-neutral-600 border-neutral-400'
+            }">
+              ${isOpen ? '受付中' : '締切済'}
+            </span>
+            <div class="min-w-0">
+              <p class="font-semibold text-sm text-neutral-900 truncate">${escapeHtml(s.name)}</p>
+              <p class="text-[11px] text-neutral-600 font-mono mt-0.5">回答数 ${s.record_count}件 / 作成 ${escapeHtml(new Date(s.created_at).toLocaleString('ja-JP'))}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            ${
+              isOpen
+                ? `<button data-action="toggle" data-id="${escapeHtml(s.id)}" data-status="closed" class="px-3 py-1.5 bg-white border border-neutral-400 hover:bg-neutral-100 text-neutral-900 text-xs font-semibold transition">受付停止</button>`
+                : `<button data-action="toggle" data-id="${escapeHtml(s.id)}" data-status="open" class="px-3 py-1.5 bg-neutral-900 hover:bg-neutral-700 text-white text-xs font-semibold transition">受付開始</button>`
+            }
+            <button data-action="delete" data-id="${escapeHtml(s.id)}" class="px-2 py-1.5 text-xs text-neutral-600 hover:text-neutral-900 hover:underline" aria-label="セッションを削除">
+              削除
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      }
+    }
+
+    async function toggleSession(id, status) {
+      await fetch(`/admin/api/sessions/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      loadSessions();
+    }
+
+    async function showNewSessionPrompt() {
+      const name = prompt('新しいセッション名を入力してください（例: 2日目 午前点呼）:');
+      if (!name) return;
+      const makeActive = confirm('このセッションを今すぐ「受付中」にしますか？\n（他のセッションは自動で締切になります）');
+
+      await fetch('/admin/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, makeActive })
+      });
+      loadSessions();
+    }
+
+    async function deleteSession(id) {
+      if (!confirm('このセッションと関連する点呼データを削除しますか？')) return;
+      await fetch(`/admin/api/sessions/${id}`, { method: 'DELETE' });
+      loadSessions();
+      loadRecords();
+    }
+
+    // 部門読み込み
+    async function loadDepartments() {
+      const res = await fetch('/admin/api/departments');
+      const depts = await res.json();
+
+      const tableContainer = document.getElementById('deptListTable');
+
+      if (depts.length === 0) {
+        tableContainer.innerHTML = '<p class="py-6 text-center text-xs text-neutral-600">部門がまだ登録されていません。</p>';
+        return;
+      }
+
+      let html = `
+        <table class="w-full text-left text-xs text-neutral-700">
+          <thead class="bg-neutral-100 text-neutral-700 font-semibold text-[11px] border-b border-neutral-300">
+            <tr>
+              <th scope="col" class="py-2.5 px-3">表示順</th>
+              <th scope="col" class="py-2.5 px-3">部門ID</th>
+              <th scope="col" class="py-2.5 px-3">部門名</th>
+              <th scope="col" class="py-2.5 px-3 text-right">操作</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-neutral-200">
+      `;
+
+      for (const d of depts) {
+        html += `
+          <tr>
+            <td class="py-2.5 px-3 font-mono">${escapeHtml(d.display_order)}</td>
+            <td class="py-2.5 px-3 font-mono">${escapeHtml(d.id)}</td>
+            <td class="py-2.5 px-3 font-semibold text-neutral-900">${escapeHtml(d.name)}</td>
+            <td class="py-2.5 px-3 text-right">
+              <button data-action="delete-dept" data-id="${escapeHtml(d.id)}" class="text-neutral-700 hover:text-neutral-900 hover:underline">削除</button>
+            </td>
+          </tr>
+        `;
+      }
+      html += '</tbody></table>';
+      tableContainer.innerHTML = html;
+    }
+
+    async function showNewDeptPrompt() {
+      const id = prompt('部門ID（英数字、例: kouhou）:');
+      if (!id) return;
+      const name = prompt('部門名（日本語、例: 広報部）:');
+      if (!name) return;
+      const displayOrder = prompt('表示順（数字、例: 1）:', '10');
+
+      const res = await fetch('/admin/api/departments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, name, displayOrder })
+      });
+      if (res.ok) {
+        loadDepartments();
+      } else {
+        const err = await res.json();
+        alert(err.error || '追加に失敗しました');
+      }
+    }
+
+    async function deleteDept(id) {
+      if (!confirm(`部門「${id}」を削除しますか？`)) return;
+      const res = await fetch(`/admin/api/departments/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        loadDepartments();
+      } else {
+        const err = await res.json();
+        alert(err.error || '削除できませんでした');
+      }
+    }
+
+    // 回答レコード読み込み
+    async function loadRecords() {
+      const res = await fetch('/admin/api/records');
+      const records = await res.json();
+      const tbody = document.getElementById('recordsTableBody');
+      tbody.innerHTML = '';
+
+      if (records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-xs text-neutral-600">回答はまだありません。</td></tr>';
+        return;
+      }
+
+      for (const r of records) {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-neutral-50 transition';
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 font-medium text-neutral-800">${escapeHtml(r.session_name)}</td>
+          <td class="py-2.5 px-3 font-semibold text-neutral-900">${escapeHtml(r.department_name)}</td>
+          <td class="py-2.5 px-3 font-mono font-bold">${escapeHtml(r.student_id)}</td>
+          <td class="py-2.5 px-3 font-mono text-[11px] text-neutral-600">${escapeHtml(r.client_ip)}</td>
+          <td class="py-2.5 px-3 font-mono text-[11px] text-neutral-600">${escapeHtml(new Date(r.submitted_at).toLocaleString('ja-JP'))}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function downloadCsv() {
+      const sessionId = document.getElementById('csvSessionSelect').value;
+      const url = sessionId ? `/admin/api/export-csv?sessionId=${sessionId}` : '/admin/api/export-csv';
+      window.location.href = url;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('sessionsList').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn) return;
+        if (btn.dataset.action === 'toggle') {
+          toggleSession(btn.dataset.id, btn.dataset.status);
+        } else if (btn.dataset.action === 'delete') {
+          deleteSession(btn.dataset.id);
+        }
+      });
+
+      document.getElementById('deptListTable').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action="delete-dept"]');
+        if (btn) deleteDept(btn.dataset.id);
+      });
+
+      checkAuth();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "bumon-tenko-server",
+  "version": "1.0.0",
+  "description": "学内ネットワーク限定 文化祭部門点呼システム",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "ipaddr.js": "^2.2.0"
+  }
+}

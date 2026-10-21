@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>点呼受付完了 - 文化祭点呼</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-[100dvh] flex items-center justify-center p-4">
+  <div class="max-w-md w-full bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+    <!-- 上端のアクセントライン -->
+    <div class="h-1 bg-emerald-700"></div>
+
+    <!-- ヘッダー -->
+    <div class="px-5 sm:px-6 py-6 sm:py-8 text-center border-b border-slate-200">
+      <span class="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-xs font-semibold">
+        受付完了
+      </span>
+      <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 mt-3">点呼を受け付けました</h1>
+      <p class="text-sm text-slate-600 mt-1">ご協力ありがとうございました</p>
+    </div>
+
+    <!-- 登録内容確認 -->
+    <div class="p-5 sm:p-6 space-y-5">
+      <div class="bg-slate-50 rounded-md p-4 border border-slate-200 space-y-2.5 text-sm">
+        <div class="flex justify-between items-start gap-4 pb-2 border-b border-slate-200">
+          <span class="text-slate-600 font-medium text-xs shrink-0 pt-0.5">学籍番号</span>
+          <span id="resStudentId" class="font-mono font-bold text-slate-900 text-base text-right break-words min-w-0">----</span>
+        </div>
+        <div class="flex justify-between items-start gap-4 pb-2 border-b border-slate-200">
+          <span class="text-slate-600 font-medium text-xs shrink-0 pt-0.5">所属部門</span>
+          <span id="resDepartment" class="font-bold text-slate-900 text-right break-words min-w-0">----</span>
+        </div>
+        <div class="flex justify-between items-start gap-4">
+          <span class="text-slate-600 font-medium text-xs shrink-0 pt-0.5">受付日時</span>
+          <span id="resTime" class="text-xs text-slate-700 font-mono text-right break-words min-w-0">----</span>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <p class="text-center text-xs text-slate-600 leading-relaxed">
+          出席データは正常に記録されました。<br>
+          この画面を閉じて終了してください。
+        </p>
+
+        <a href="/" class="block w-full text-center bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-4 rounded-md transition text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
+          フォームへ戻る（再入力・修正）
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = sessionStorage.getItem('lastAttendance');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          document.getElementById('resStudentId').textContent = data.studentId || '----';
+          document.getElementById('resDepartment').textContent = data.departmentName || '----';
+
+          if (data.submittedAt) {
+            const date = new Date(data.submittedAt);
+            document.getElementById('resTime').textContent = date.toLocaleTimeString('ja-JP');
+          }
+        } catch (e) {}
+      }
+    });
+  </script>
+</body>
+</html>

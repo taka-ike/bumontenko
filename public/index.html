@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文化祭 部門点呼フォーム</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* アニメーション用 */
+    .fade-in {
+      animation: fadeIn 0.25s ease-out forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .fade-in { animation: none; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-[100dvh] py-6 px-4 flex flex-col justify-between">
+  <div class="max-w-md w-full mx-auto">
+    <!-- タイトルヘッダー -->
+    <div class="text-center mb-6">
+      <h1 class="text-2xl font-bold text-slate-900 tracking-tight">文化祭 部門点呼</h1>
+      <p id="sessionNameDisplay" class="text-sm font-medium text-slate-600 mt-1">読み込み中...</p>
+    </div>
+
+    <!-- メインカード -->
+    <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-5 sm:p-6">
+      <!-- セッション停止中の表示 -->
+      <div id="closedSessionView" class="hidden text-center py-8 space-y-3">
+        <div class="w-12 h-12 bg-slate-100 text-slate-500 rounded-md flex items-center justify-center mx-auto text-xl">
+          <i class="fa-solid fa-lock"></i>
+        </div>
+        <h2 class="text-lg font-bold text-slate-800">現在受付中の点呼はありません</h2>
+        <p class="text-xs text-slate-600 leading-relaxed">
+          次回の点呼時間が開始されるまでしばらくお待ちください。<br>
+          開始されましたらページを再読み込みしてください。
+        </p>
+        <button onclick="location.reload()" class="mt-4 px-4 py-2.5 bg-slate-800 text-white text-xs font-semibold rounded-md hover:bg-slate-900 transition active:translate-y-px">
+          再読み込み
+        </button>
+      </div>
+
+      <!-- 入力フォーム本体 -->
+      <form id="tenkoForm" class="space-y-5" onsubmit="return false;">
+        <!-- STEP 1: 学籍番号入力 & Teams認証コード送信 -->
+        <div class="space-y-3">
+          <label for="studentIdInput" class="block text-xs font-semibold text-slate-700">
+            1. 学籍番号 <span class="text-rose-700">*</span>
+          </label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none">
+              <i class="fa-regular fa-id-card"></i>
+            </span>
+            <input
+              type="text"
+              id="studentIdInput"
+              required
+              placeholder="例: 21420"
+              class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-md font-mono text-base font-bold text-slate-800 placeholder:font-normal placeholder:text-slate-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition"
+            >
+          </div>
+          <p class="text-xs text-slate-600">
+            ※ ご自身の学籍番号を入力し、下のボタンでTeams認証コードを受信してください。
+          </p>
+
+          <button
+            type="button"
+            id="sendOtpBtn"
+            onclick="handleSendOtp()"
+            class="w-full bg-blue-700 hover:bg-blue-800 active:translate-y-px text-white font-semibold py-3 px-4 rounded-md transition flex items-center justify-center gap-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+          >
+            <i class="fa-solid fa-paper-plane"></i>
+            <span>Teamsに認証コードを送信</span>
+          </button>
+        </div>
+
+        <!-- STEP 2: 認証コード受信完了後に表示されるエリア -->
+        <div id="step2Area" class="hidden space-y-5 pt-4 border-t border-slate-200 fade-in">
+          <!-- Teams通知アラート -->
+          <div class="bg-blue-50 border border-blue-200 rounded-md p-3 text-xs text-blue-900 flex items-start gap-2.5">
+            <i class="fa-solid fa-circle-check text-blue-700 text-sm mt-0.5"></i>
+            <div>
+              <p class="font-bold">Teamsチャットにコードを送信しました</p>
+              <p class="text-xs text-blue-800 mt-0.5" id="targetEmailDisplay">
+                Workflows bot から届いた6桁の数字を入力してください。
+              </p>
+            </div>
+          </div>
+
+          <!-- 認証コード入力欄 -->
+          <div class="space-y-1.5">
+            <label for="otpCodeInput" class="block text-xs font-semibold text-slate-700">
+              2. 認証コード (6桁) <span class="text-rose-700">*</span>
+            </label>
+            <input
+              type="tel"
+              id="otpCodeInput"
+              maxlength="6"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              pattern="[0-9]{6}"
+              placeholder="000000"
+              class="w-full py-3 bg-slate-50 border border-slate-300 rounded-md text-center font-mono text-2xl font-bold tracking-[0.3em] text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition"
+            >
+          </div>
+
+          <!-- 所属部門選択 -->
+          <div class="space-y-1.5">
+            <label for="departmentSelect" class="block text-xs font-semibold text-slate-700">
+              3. 所属部門 <span class="text-rose-700">*</span>
+            </label>
+            <div class="relative">
+              <select
+                id="departmentSelect"
+                required
+                class="w-full py-3 px-3.5 bg-slate-50 border border-slate-300 rounded-md text-base sm:text-sm font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 appearance-none transition"
+              >
+                <option value="" disabled selected>選択してください</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400">
+                <i class="fa-solid fa-chevron-down text-xs"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- 送信ボタン -->
+          <button
+            type="button"
+            id="submitAttendanceBtn"
+            onclick="handleSubmitAttendance()"
+            class="w-full bg-blue-700 hover:bg-blue-800 active:translate-y-px text-white font-bold py-3.5 px-4 rounded-md transition flex items-center justify-center gap-2 text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+          >
+            <i class="fa-solid fa-circle-check"></i>
+            <span>点呼を確定する</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- フッター -->
+    <div class="mt-6 text-center text-xs text-slate-600">
+      <p>くぬぎだ祭実行局 編集部門3J04</p>
+    </div>
+  </div>
+
+  <script>
+    let currentSession = null;
+
+    // 画面初期化
+    async function initForm() {
+      try {
+        const res = await fetch('/api/form/initial');
+        if (!res.ok) {
+          throw new Error('初期化データの取得に失敗しました');
+        }
+        const data = await res.json();
+        currentSession = data.session;
+
+        const sessionDisplay = document.getElementById('sessionNameDisplay');
+        const closedView = document.getElementById('closedSessionView');
+        const tenkoForm = document.getElementById('tenkoForm');
+
+        if (!currentSession || currentSession.status !== 'open') {
+          sessionDisplay.textContent = '受付停止中';
+          closedView.classList.remove('hidden');
+          tenkoForm.classList.add('hidden');
+          return;
+        }
+
+        sessionDisplay.textContent = `${currentSession.name}（受付中）`;
+
+        // 部門セレクトボックスの構築
+        const deptSelect = document.getElementById('departmentSelect');
+        deptSelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
+        for (const dept of data.departments) {
+          const opt = document.createElement('option');
+          opt.value = dept.id;
+          opt.textContent = dept.name;
+          deptSelect.appendChild(opt);
+        }
+      } catch (err) {
+        console.error(err);
+        alert('サーバーとの通信に失敗しました。ページを再読み込みしてください。');
+      }
+    }
+
+    // OTP送信リクエスト
+    async function handleSendOtp() {
+      const studentIdInput = document.getElementById('studentIdInput');
+      const studentId = studentIdInput.value.trim();
+      if (!studentId) {
+        alert('学籍番号を入力してください。');
+        studentIdInput.focus();
+        return;
+      }
+
+      const btn = document.getElementById('sendOtpBtn');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 送信中...';
+
+      try {
+        const res = await fetch('/api/form/send-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ studentId })
+        });
+        const result = await res.json();
+
+        if (!res.ok) {
+          alert(result.error || 'コード送信に失敗しました');
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+          return;
+        }
+
+        // 成功時: Step 2 を表示
+        document.getElementById('targetEmailDisplay').textContent =
+          `Teamsチャットで6桁のコードを送信しました。`;
+        document.getElementById('step2Area').classList.remove('hidden');
+
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> 送信完了（再送する）';
+        btn.disabled = false;
+        btn.classList.remove('bg-blue-700', 'hover:bg-blue-800');
+        btn.classList.add('bg-slate-600', 'hover:bg-slate-700');
+
+        document.getElementById('otpCodeInput').focus();
+      } catch (e) {
+        alert('通信エラーが発生しました: ' + e.message);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+
+    // 点呼確定リクエスト
+    async function handleSubmitAttendance() {
+      const studentId = document.getElementById('studentIdInput').value.trim();
+      const code = document.getElementById('otpCodeInput').value.trim();
+      const departmentId = document.getElementById('departmentSelect').value;
+
+      if (!studentId) {
+        alert('学籍番号を入力してください。');
+        return;
+      }
+      if (!code || code.length !== 6) {
+        alert('Teamsに届いた6桁の認証コードを入力してください。');
+        document.getElementById('otpCodeInput').focus();
+        return;
+      }
+      if (!departmentId) {
+        alert('所属部門を選択してください。');
+        document.getElementById('departmentSelect').focus();
+        return;
+      }
+      const submitBtn = document.getElementById('submitAttendanceBtn');
+      const originalText = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 登録中...';
+
+      try {
+        const res = await fetch('/api/form/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            studentId,
+            code,
+            departmentId
+          })
+        });
+        const result = await res.json();
+
+        if (!res.ok) {
+          alert(result.error || '登録に失敗しました');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalText;
+          return;
+        }
+
+        // 完了情報を sessionStorage に保存して complete 画面へ遷移
+        sessionStorage.setItem('lastAttendance', JSON.stringify(result.record));
+        window.location.href = '/complete';
+      } catch (e) {
+        alert('通信エラーが発生しました: ' + e.message);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', initForm);
+  </script>
+</body>
+</html>
