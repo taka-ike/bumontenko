@@ -156,7 +156,7 @@
     // 認証確認
     async function checkAuth() {
       try {
-        const res = await fetch('/admin/api/me');
+        const res = await fetch('/tadmin/api/me');
         const data = await res.json();
         if (data.authenticated) {
           showAdminView();
@@ -183,7 +183,7 @@
       e.preventDefault();
       const password = document.getElementById('adminPasswordInput').value;
       try {
-        const res = await fetch('/admin/api/login', {
+        const res = await fetch('/tadmin/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ password })
@@ -199,7 +199,7 @@
     }
 
     async function handleLogout() {
-      await fetch('/admin/api/logout', { method: 'POST' });
+      await fetch('/tadmin/api/logout', { method: 'POST' });
       showLoginModal();
     }
 
@@ -209,7 +209,7 @@
 
     // セッション読み込み
     async function loadSessions() {
-      const res = await fetch('/admin/api/sessions');
+      const res = await fetch('/tadmin/api/sessions');
       const sessions = await res.json();
 
       const container = document.getElementById('sessionsList');
@@ -262,7 +262,7 @@
     }
 
     async function toggleSession(id, status) {
-      await fetch(`/admin/api/sessions/${id}`, {
+      await fetch(`/tadmin/api/sessions/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
@@ -275,7 +275,7 @@
       if (!name) return;
       const makeActive = confirm('このセッションを今すぐ「受付中」にしますか？\n（他のセッションは自動で締切になります）');
 
-      await fetch('/admin/api/sessions', {
+      await fetch('/tadmin/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, makeActive })
@@ -285,14 +285,14 @@
 
     async function deleteSession(id) {
       if (!confirm('このセッションと関連する点呼データを削除しますか？')) return;
-      await fetch(`/admin/api/sessions/${id}`, { method: 'DELETE' });
+      await fetch(`/tadmin/api/sessions/${id}`, { method: 'DELETE' });
       loadSessions();
       loadRecords();
     }
 
     // 部門読み込み
     async function loadDepartments() {
-      const res = await fetch('/admin/api/departments');
+      const res = await fetch('/tadmin/api/departments');
       const depts = await res.json();
 
       const tableContainer = document.getElementById('deptListTable');
@@ -338,7 +338,7 @@
       if (!name) return;
       const displayOrder = prompt('表示順（数字、例: 1）:', '10');
 
-      const res = await fetch('/admin/api/departments', {
+      const res = await fetch('/tadmin/api/departments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, name, displayOrder })
@@ -353,7 +353,7 @@
 
     async function deleteDept(id) {
       if (!confirm(`部門「${id}」を削除しますか？`)) return;
-      const res = await fetch(`/admin/api/departments/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/tadmin/api/departments/${id}`, { method: 'DELETE' });
       if (res.ok) {
         loadDepartments();
       } else {
@@ -364,7 +364,7 @@
 
     // 回答レコード読み込み
     async function loadRecords() {
-      const res = await fetch('/admin/api/records');
+      const res = await fetch('/tadmin/api/records');
       const records = await res.json();
       const tbody = document.getElementById('recordsTableBody');
       tbody.innerHTML = '';
@@ -390,7 +390,7 @@
 
     function downloadCsv() {
       const sessionId = document.getElementById('csvSessionSelect').value;
-      const url = sessionId ? `/admin/api/export-csv?sessionId=${sessionId}` : '/admin/api/export-csv';
+      const url = sessionId ? `/tadmin/api/export-csv?sessionId=${sessionId}` : '/tadmin/api/export-csv';
       window.location.href = url;
     }
 

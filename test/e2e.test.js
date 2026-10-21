@@ -28,7 +28,7 @@ describe('E2E HTTP API 総合テスト', () => {
       app.use(cookieParser());
       app.use('/api/form', require('../src/routes/form'));
       app.use('/api/dashboard', require('../src/routes/dashboard'));
-      app.use('/admin/api', require('../src/routes/admin'));
+      app.use('/tadmin/api', require('../src/routes/admin'));
 
       server = app.listen(8099, '127.0.0.1', () => {
         resolve();
@@ -145,7 +145,7 @@ describe('E2E HTTP API 総合テスト', () => {
 
   test('管理者ログインとCSVエクスポートが動作すること', async () => {
     // ログイン
-    const loginRes = await fetch(`${baseUrl}/admin/api/login`, {
+    const loginRes = await fetch(`${baseUrl}/tadmin/api/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password: 'test_password_123' })
@@ -155,7 +155,7 @@ describe('E2E HTTP API 総合テスト', () => {
     const token = loginData.token;
 
     // CSVエクスポート
-    const csvRes = await fetch(`${baseUrl}/admin/api/export-csv`, {
+    const csvRes = await fetch(`${baseUrl}/tadmin/api/export-csv`, {
       headers: { 'x-admin-token': token }
     });
     assert.strictEqual(csvRes.status, 200);

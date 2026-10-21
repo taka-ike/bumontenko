@@ -9,7 +9,7 @@ function checkDashboardAuth(req, res, next) {
   if (!config.dashboardToken) {
     return next();
   }
-  const token = req.query.token || req.headers['x-dashboard-token'];
+  const token = req.query.Token || req.query.token || req.headers['x-dashboard-token'];
   if (token !== config.dashboardToken) {
     return res.status(401).json({ error: 'ダッシュボードの閲覧権限がありません。' });
   }

@@ -44,7 +44,7 @@
         <button onclick="fetchStats()" aria-label="手動更新" class="px-3 py-2 bg-white border border-neutral-400 hover:bg-neutral-100 text-neutral-900 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2">
           更新
         </button>
-        <a href="/admin" class="px-3 py-2 bg-neutral-900 hover:bg-neutral-700 text-white text-sm font-semibold transition shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2">
+        <a href="/tadmin" class="px-3 py-2 bg-neutral-900 hover:bg-neutral-700 text-white text-sm font-semibold transition shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2">
           管理画面
         </a>
       </div>
@@ -85,6 +85,15 @@
     let currentSessionId = '';
     let eventSource = null;
 
+    const queryParams = new URLSearchParams(window.location.search);
+    const dashboardToken = queryParams.get('Token') || queryParams.get('token') || '';
+
+    function withToken(url) {
+      if (!dashboardToken) return url;
+      const separator = url.includes('?') ? '&' : '?';
+      return `${url}${separator}Token=${encodeURIComponent(dashboardToken)}`;
+    }
+
     function escapeHtml(value) {
       return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
         '&': '&amp;',
@@ -97,7 +106,8 @@
 
     async function fetchStats() {
       try {
-        const url = currentSessionId ? `/api/dashboard/stats?sessionId=${currentSessionId}` : '/api/dashboard/stats';
+        const statsUrl = currentSessionId ? `/api/dashboard/stats?sessionId=${encodeURIComponent(currentSessionId)}` : '/api/dashboard/stats';
+        const url = withToken(statsUrl);
         const res = await fetch(url);
         if (!res.ok) throw new Error('統計データの取得失敗');
         const data = await res.json();
@@ -197,7 +207,7 @@
     // SSE接続（リアルタイム更新）
     function initSse() {
       if (eventSource) eventSource.close();
-      eventSource = new EventSource('/api/dashboard/stream');
+      eventSource = new EventSource(withToken('/api/dashboard/stream'));
 
       eventSource.addEventListener('attendance', (e) => {
         // 新しい点呼データが送信されたら統計を自動リロード

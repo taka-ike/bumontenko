@@ -86,7 +86,7 @@ function ipFilterMiddleware(req, res, next) {
   // ※もし管理画面も学内に閉じたい場合は設定で調整可能
   const pathname = req.path;
   if (
-    pathname.startsWith('/admin') ||
+    pathname.startsWith('/tadmin') ||
     pathname === '/error-denied.html' ||
     pathname.startsWith('/css/') ||
     pathname.startsWith('/js/') ||

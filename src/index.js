@@ -20,7 +20,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// 学内IP制限ミドルウェア（/admin や静的アセット以外に適用）
+// 学内IP制限ミドルウェア（/tadmin や静的アセット以外に適用）
 app.use(ipFilterMiddleware);
 
 // 静的ファイルの提供
@@ -34,7 +34,7 @@ app.get('/healthz', (req, res) => {
 // APIルーティング
 app.use('/api/form', formRouter);
 app.use('/api/dashboard', dashboardRouter);
-app.use('/admin/api', adminRouter);
+app.use('/tadmin/api', adminRouter);
 
 // 画面ルーティング
 app.get('/complete', (req, res) => {
@@ -45,8 +45,8 @@ app.get('/dashboard', (req, res) => {
   res.sendFile(path.resolve(__dirname, '..', 'public', 'dashboard.html'));
 });
 
-app.get('/admin', (req, res) => {
-  res.sendFile(path.resolve(__dirname, '..', 'public', 'admin.html'));
+app.get('/tadmin', (req, res) => {
+  res.sendFile(path.resolve(__dirname, '..', 'public', 'tadmin.html'));
 });
 
 // 404 ハンドラ
@@ -77,7 +77,7 @@ app.listen(config.port, '0.0.0.0', () => {
   }
   console.log(` 点呼フォーム: http://localhost:${config.port}/`);
   console.log(` 本部ダッシュボード: http://localhost:${config.port}/dashboard`);
-  console.log(` 管理者画面: http://localhost:${config.port}/admin`);
+  console.log(` 管理者画面: http://localhost:${config.port}/tadmin`);
   if (barcodeTenko.isEnabled()) {
     console.log(` BarcodeTenko5: ${config.barcodeTenkoBaseUrl} (locationId=${config.barcodeTenkoLocationId ?? '未設定'})`);
   } else {
